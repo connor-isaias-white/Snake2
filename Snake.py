@@ -5,16 +5,16 @@ from Config import Config
 
 class Snake:
 
-    def __init__(self, display, left):
+    def __init__(self, display, left, len):
         self.x_pos = Config['game']['width'] / 2 - left
         self.y_pos = Config['game']['height'] / 2
         self.display = display
         self.body = []
-        self.max_size = 3
+        self.max_size = len
         self.score = 0
 
     def eat(self):
-        self.max_size += 4
+        self.max_size += 1
 
     def draw(self, color):
 
@@ -28,8 +28,8 @@ class Snake:
                 Config['snake']['width']
             ]
         ))
+
         if len(self.body) > self.max_size:
-            self.body[0][0]
             pygame.draw.rect(
                 self.display,
                 Config['colors']['black'],

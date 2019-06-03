@@ -10,7 +10,7 @@ def loop(self):
 
 def main():
     screen = pygame.display.set_mode(
-        (Config['game']['height'], Config['game']['width']))
+        (Config['game']['width'], Config['game']['height']))
     pygame.display.set_caption(Config['game']['caption'])
     game = Game(screen)
     game.loop(screen)

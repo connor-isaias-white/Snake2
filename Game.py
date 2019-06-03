@@ -11,7 +11,24 @@ class Game:
         self.display = screen
         self.player1score = 0
         self.player2score = 0
+        self.player1len = 3
+        self.player2len = 3
         self.map(screen)
+
+    def text_stuff(self, screen):
+        font = pygame.font.Font('freesansbold.ttf', 32)
+        self.text = font.render(f"Green: {self.player2score}", True,
+                                Config['colors']['green'], Config['colors']['gray'])
+        self.text2 = font.render(f"Blue: {self.player1score}", True,
+                                 Config['colors']['blue'], Config['colors']['gray'])
+        self.textRect = self.text.get_rect()
+        self.textRect.center = (
+            Config['game']['bumper_size']*2.5, Config['game']['bumper_size'] // 2)
+        self.textRect2 = self.text.get_rect()
+        self.textRect2.center = (
+            Config['game']['width']-Config['game']['bumper_size']*2.5, Config['game']['bumper_size'] // 2)
+        screen.blit(self.text, self.textRect)
+        screen.blit(self.text2, self.textRect2)
 
     def map(self, screen):
         screen.fill(Config["colors"]["gray"])
@@ -24,24 +41,14 @@ class Game:
                 Config['game']['width'] - 2*Config['game']['bumper_size'],
                 Config['game']['height'] - 2*Config['game']['bumper_size']
             ])
-        font = pygame.font.Font('freesansbold.ttf', 32)
-        self.text = font.render(f"Green: {self.player2score}", True,
-                                Config['colors']['green'], Config['colors']['gray'])
-        self.text2 = font.render(f"Blue: {self.player1score}", True,
-                                 Config['colors']['blue'], Config['colors']['gray'])
-        self.textRect = self.text.get_rect()
-        self.textRect.center = (
-            Config['game']['bumper_size']*2.5, Config['game']['bumper_size'] // 2)
-        self.textRect2 = self.text.get_rect()
-        self.textRect2.center = (
-            Config['game']['width']-Config['game']['bumper_size']*2.5, Config['game']['bumper_size'] // 2)
 
     def loop(self, screen):
-        screen.blit(self.text, self.textRect)
-        screen.blit(self.text2, self.textRect2)
+
         clock = pygame.time.Clock()
-        self.snake = Snake(self.display, -(Config['snake']['width']))
-        self.snake2 = Snake(self.display, (Config['snake']['width']))
+        self.snake = Snake(
+            self.display, -(Config['snake']['width']), self.player1len)
+        self.snake2 = Snake(
+            self.display, (Config['snake']['width'])*2, self.player2len)
         apple = Apple(self.display)
         ai = Ai()
         x_change = Config['snake']['speed']
@@ -50,7 +57,7 @@ class Game:
         y_change2 = 0
 
         while True:
-
+            self.text_stuff(screen)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
@@ -96,23 +103,25 @@ class Game:
                 apple.remove()
                 apple.randomize()
                 self.snake.eat()
+                self.player1score += 0
             elif apple_rect.colliderect(snake_rect2):
                 apple.remove()
                 apple.randomize()
                 self.snake2.eat()
+                self.player2score += 0
 
             snakehit = self.snake.hit(self.snake2.body, bumper_x, bumper_y)
             snakehit2 = self.snake2.hit(self.snake.body, bumper_x, bumper_y)
 
             if (snakehit or snakehit2):
                 if (snakehit and snakehit2):
-                    print("Tie")
+                    pass
                 elif snakehit:
-                    self.snake2.score += 1
                     self.player2score += 1
                 else:
-                    self.snake.score += 1
                     self.player1score += 1
+                self.player1len = self.snake.max_size
+                self.player2len = self.snake2.max_size
                 apple.remove()
                 # snake.remove()
                 self.map(screen)

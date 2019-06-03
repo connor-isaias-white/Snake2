@@ -2,7 +2,7 @@ Config = {
     'game': {
         'caption': 'Snake',
         'height': 800,
-        'width': 800,
+        'width': 1000,
         'fps': 30,
         'bumper_size': 60
     },
