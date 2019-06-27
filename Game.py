@@ -3,11 +3,14 @@ from Config import Config
 from Snake import Snake
 from Apple import Apple
 from ai import Ai
+from Network import Network
 
 
 class Game:
 
     def __init__(self, screen):
+        self.net = Network()
+        self.runing = "False"
         self.display = screen
         self.player1score = 0
         self.player2score = 0
@@ -43,7 +46,6 @@ class Game:
             ])
 
     def loop(self, screen):
-
         clock = pygame.time.Clock()
         self.snake = Snake(
             self.display, -(Config['snake']['width']), self.player1len)
@@ -58,75 +60,85 @@ class Game:
 
         while True:
             self.text_stuff(screen)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT and x_change == 0:
-                        x_change = -Config['snake']['speed']
-                        y_change = 0
-                    elif event.key == pygame.K_RIGHT and x_change == 0:
-                        x_change = Config['snake']['speed']
-                        y_change = 0
-                    elif event.key == pygame.K_UP and y_change == 0:
-                        x_change = 0
-                        y_change = -Config['snake']['speed']
-                    elif event.key == pygame.K_DOWN and y_change == 0:
-                        x_change = 0
-                        y_change = Config['snake']['speed']
+            if self.runing == "True":
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        exit()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_a and x_change == 0:
+                            x_change = -Config['snake']['speed']
+                            y_change = 0
+                        elif event.key == pygame.K_d and x_change == 0:
+                            x_change = Config['snake']['speed']
+                            y_change = 0
+                        elif event.key == pygame.K_w and y_change == 0:
+                            x_change = 0
+                            y_change = -Config['snake']['speed']
+                        elif event.key == pygame.K_s and y_change == 0:
+                            x_change = 0
+                            y_change = Config['snake']['speed']
+                received = self.send_data(x_change, y_change).split(",")
+                x_change2 = -int(received[0])
+                y_change2 = int(received[1])
 
-                    if event.key == pygame.K_a and x_change2 == 0:
-                        x_change2 = -Config['snake']['speed']
-                        y_change2 = 0
-                    elif event.key == pygame.K_d and x_change2 == 0:
-                        x_change2 = Config['snake']['speed']
-                        y_change2 = 0
-                    elif event.key == pygame.K_w and y_change2 == 0:
-                        x_change2 = 0
-                        y_change2 = -Config['snake']['speed']
-                    elif event.key == pygame.K_s and y_change2 == 0:
-                        x_change2 = 0
-                        y_change2 = Config['snake']['speed']
+                snake_rect = self.snake.draw(Config['colors']['blue'])
+                snake_rect2 = self.snake2.draw(Config['colors']['green'])
+                apple_rect = apple.draw()
+                bumper_x = Config['game']['width'] - \
+                    Config['game']['bumper_size']
+                bumper_y = Config['game']['height'] - \
+                    Config['game']['bumper_size']
 
-            snake_rect = self.snake.draw(Config['colors']['blue'])
-            snake_rect2 = self.snake2.draw(Config['colors']['green'])
+                if apple_rect.colliderect(snake_rect):
+                    apple.remove()
+                    apple.randomize()
+                    self.snake.eat()
+                    self.player1score += 0
+                elif apple_rect.colliderect(snake_rect2):
+                    apple.remove()
+                    apple.randomize()
+                    self.snake2.eat()
+                    self.player2score += 0
 
-            apple_rect = apple.draw()
-            ai.update(pos=(snake_rect[0], snake_rect[1]),  apple=(apple_rect[0], apple_rect[1]),
-                      size=self.snake.max_size)
-            move = ai.action()
+                snakehit = self.snake.hit(self.snake2.body, bumper_x, bumper_y)
+                snakehit2 = self.snake2.hit(
+                    self.snake.body, bumper_x, bumper_y)
 
-            bumper_x = Config['game']['width'] - Config['game']['bumper_size']
-            bumper_y = Config['game']['height'] - Config['game']['bumper_size']
-
-            if apple_rect.colliderect(snake_rect):
-                apple.remove()
-                apple.randomize()
-                self.snake.eat()
-                self.player1score += 0
-            elif apple_rect.colliderect(snake_rect2):
-                apple.remove()
-                apple.randomize()
-                self.snake2.eat()
-                self.player2score += 0
-
-            snakehit = self.snake.hit(self.snake2.body, bumper_x, bumper_y)
-            snakehit2 = self.snake2.hit(self.snake.body, bumper_x, bumper_y)
-
-            if (snakehit or snakehit2):
-                if (snakehit and snakehit2):
-                    pass
-                elif snakehit:
-                    self.player2score += 1
-                else:
-                    self.player1score += 1
-                self.player1len = self.snake.max_size
-                self.player2len = self.snake2.max_size
-                apple.remove()
-                # snake.remove()
-                self.map(screen)
-                self.loop(screen)
-            self.snake.move(x_change, y_change)
-            self.snake2.move(x_change2, y_change2)
+                if (snakehit or snakehit2):
+                    if (snakehit and snakehit2):
+                        pass
+                    elif snakehit:
+                        self.player2score += 1
+                    else:
+                        self.player1score += 1
+                    self.player1len = self.snake.max_size
+                    self.player2len = self.snake2.max_size
+                    apple.remove()
+                    # snake.remove()
+                    self.map(screen)
+                    self.loop(screen)
+                self.snake.move(x_change, y_change)
+                self.snake2.move(x_change2, y_change2)
+            else:
+                self.runing = self.waitforstart()
             pygame.display.update()
             clock.tick(Config['game']['fps'])
+
+    def waitforstart(self):
+        data = str(self.net.id) + ":waiting"
+        reply = self.net.send(data)
+        return reply
+
+    def send_data(self, x_change, y_change):
+        data = str(self.net.id) + ":" + str(x_change) + \
+            ',' + str(y_change)
+        reply = self.net.send(data)
+        return reply
+
+    @staticmethod
+    def parse_data(data):
+        try:
+            d = data.split(":")[1].split(',')
+            return int(d[0], int(d[1]))
+        except:
+            return 0, 0
